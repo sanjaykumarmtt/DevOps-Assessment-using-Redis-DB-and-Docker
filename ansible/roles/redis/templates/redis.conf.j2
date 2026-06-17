@@ -1,0 +1,9 @@
+port {{ redis_port }}
+bind {{ redis_bind }}
+daemonize yes
+dir /var/lib/redis
+logfile /var/log/redis/redis.log
+cluster-enabled yes
+cluster-config-file nodes.conf
+protected-mode no
+cluster-node-timeout {{ redis_timeout }}

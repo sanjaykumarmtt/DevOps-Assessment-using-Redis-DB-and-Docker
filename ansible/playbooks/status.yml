@@ -1,0 +1,24 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Fetch Pure Redis Cluster Metrics
+      shell: |
+        NODES_DATA=$(redis-cli -p 6379 cluster nodes | tr '\n' '~')
+        
+        INFO_DATA=$(redis-cli -p 6379 info)
+        VERSION=$(echo "$INFO_DATA" | grep "redis_version:" | cut -d':' -f2 | tr -d '\r\n ')
+        MEMORY=$(echo "$INFO_DATA" | grep "used_memory_human:" | cut -d':' -f2 | tr -d '\r\n ')
+        KEYS=$(redis-cli -p 6379 dbsize | tr -d '\r\n ')
+        
+        echo "##NODE##version:v$VERSION|mem:$MEMORY|keys:$KEYS|nodes_raw:$NODES_DATA"
+      register: redis_raw_out
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Unified Output Builder
+      vars:
+        combined_msg: "{{ groups['all'] | map('extract', hostvars, ['redis_raw_out', 'stdout']) | list | join('##BREAK##') }}"
+      debug:
+        msg: "{{ combined_msg }}"

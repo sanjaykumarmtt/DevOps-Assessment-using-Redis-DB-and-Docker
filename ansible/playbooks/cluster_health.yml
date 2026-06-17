@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Check Overall Redis Cluster Health
+      command: "redis-cli -h 10.10.0.11 -p 6379 cluster info"
+      register: cluster_status_output
+      run_once: true
+
+    - name: Print Overall Cluster Health Summary
+      debug:
+        var: cluster_status_output.stdout_lines
+      run_once: true

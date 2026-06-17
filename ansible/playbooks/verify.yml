@@ -1,0 +1,54 @@
+# ---
+# - name: Phase 2 - Verify Data in Redis Cluster
+#   hosts: redis_cluster[0]
+#   become: yes
+
+#   tasks:
+#     - name: Copy Python verify script to the container
+#       template:
+#         src: ../roles/redis/templates/verify_data.py.j2
+#         dest: /tmp/verify_data.py
+#         mode: '0755'
+
+#     - name: Execute data verification script
+#       command: python3 /tmp/verify_data.py
+#       register: verify_output
+#       changed_when: false
+
+#     - name: Clean up temporary verify script
+#       file:
+#         path: /tmp/verify_data.py
+#         state: absent
+
+#     - name: Print Verification Summary Output (JSON format)
+#       debug:
+#         msg: "{{ verify_output.stdout }}"
+
+---
+- name: Phase 2 - Verify Data in Redis Cluster
+  hosts: redis_cluster[0]
+  become: yes
+
+  tasks:
+    - name: Copy Python verify script to the container
+      template:
+        src: ../roles/redis/templates/verify_data.py.j2
+        dest: /tmp/verify_data.py
+        mode: '0755'
+
+    - name: Execute data verification script
+      command: python3 /tmp/verify_data.py
+      vars:
+        target_keys: "{{ target_keys }}"
+      register: verify_output
+      changed_when: false
+
+    # 🚀 [FIX 2] - ஜாவா பார்சர் படித்துக் கொள்ள இந்த JSON அவுட்புட்டை கன்சோலில் பிரிண்ட் செய்கிறோம் சஞ்சாய்!
+    - name: Print verification results for Java parser
+      debug:
+        msg: "{{ verify_output.stdout }}"
+
+    - name: Clean up temporary verify script
+      file:
+        path: /tmp/verify_data.py
+        state: absent

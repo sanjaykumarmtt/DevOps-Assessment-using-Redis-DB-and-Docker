@@ -1,0 +1,5 @@
+---
+redis_version: "{{ redis_version | default('7.0.15') }}"
+redis_port: 6379
+redis_bind: "0.0.0.0"
+redis_timeout: 15000

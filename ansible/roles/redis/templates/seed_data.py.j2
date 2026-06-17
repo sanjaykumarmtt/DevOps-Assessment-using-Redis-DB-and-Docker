@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import hashlib
+import subprocess
+import json
+
+def seed_data():
+    total_inserted = 0
+    failures = 0
+    
+    # 🚀 [VERIFIED] - அன்சிபிள் கொடுக்கும் இன்புட் எண்ணிக்கையை இங்க ஜின்ஜா சsyntax-ல் வாங்குகிறோம்!
+    total_keys_input = int("{{ target_keys | default(1000) }}")
+    
+    for i in range(1, total_keys_input + 1):
+        # Format key sequentially from key:0001
+        key = f"key:{i:04d}"
+        
+        # Compute deterministic SHA256 hash value
+        value = hashlib.sha256(key.encode('utf-8')).hexdigest()
+        
+        # Execute redis-cli with -c flag for cluster routing support
+        cmd = ["redis-cli", "-h", "127.0.0.1", "-c", "-p", "6379", "SET", key, value]
+        
+        try:
+            # Capture standard output securely
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            
+            # Redis standard success response for SET is "OK"
+            if "OK" in result.stdout:
+                total_inserted += 1
+            else:
+                failures += 1
+        except Exception:
+            failures += 1
+            
+    # Construct structured JSON summary
+    summary = {
+        "status": "SUCCESS" if failures == 0 else "FAIL",
+        "total_keys_inserted": total_inserted,
+        "failures": failures
+    }
+    
+    # Print exclusively to stdout for the Java wrapper to intercept
+    print(json.dumps(summary))
+
+if __name__ == "__main__":
+    seed_data()

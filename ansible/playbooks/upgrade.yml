@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Download Target Redis Version Source Code
+      get_url:
+        url: "https://download.redis.io/releases/redis-{{ target_redis_version }}.tar.gz"
+        dest: "/tmp/redis-{{ target_redis_version }}.tar.gz"
+      when: inventory_hostname == target_node_name
+
+    - name: Extract New Redis Tarball
+      unarchive:
+        src: "/tmp/redis-{{ target_redis_version }}.tar.gz"
+        dest: "/tmp"
+        remote_src: yes
+      when: inventory_hostname == target_node_name
+
+    - name: Compile New Redis Version
+      command: make
+      args:
+        chdir: "/tmp/redis-{{ target_redis_version }}"
+      when: inventory_hostname == target_node_name
+
+    - name: Install New Redis Binaries Over Old Ones
+      command: make install
+      args:
+        chdir: "/tmp/redis-{{ target_redis_version }}"
+      when: inventory_hostname == target_node_name
+
+    - name: Stop Old Redis Server Process Gracefully
+      shell: redis-cli -p 6379 shutdown
+      ignore_errors: yes
+      when: inventory_hostname == target_node_name
+
+    - name: Pause briefly to ensure port 6379 is fully released
+      pause:
+        seconds: 3
+      when: inventory_hostname == target_node_name
+
+    - name: Start Upgraded Redis Server Process
+      # Using async and poll: 0 ensures Ansible fires the command and moves on immediately,
+      # preventing the playbook from hanging indefinitely if Redis runs in the foreground.
+      shell: redis-server /etc/redis/redis.conf
+      async: 60
+      poll: 0
+      when: inventory_hostname == target_node_name
+
+    - name: Wait for Replica to Rejoin Cluster and Complete Sync
+      shell: "redis-cli -p 6379 cluster info"
+      register: cluster_info_output
+      until: "'cluster_state:ok' in cluster_info_output.stdout"
+      # Polling every 5 seconds for up to 2 minutes (24 retries)
+      retries: 24
+      delay: 5
+      when: inventory_hostname == target_node_name
+
+    - name: Debug Final Cluster State for Java Verification
+      debug:
+        msg: "NODE_UPGRADED_SUCCESSFULLY_AND_CLUSTER_STATE_IS_OK"
+      when: inventory_hostname == target_node_name

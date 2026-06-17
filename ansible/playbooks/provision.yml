@@ -1,0 +1,6 @@
+---
+- name: Phase 1 - Provision Redis Cluster on All Nodes
+  hosts: redis_cluster
+  become: yes
+  roles:
+    - role: ../roles/redis

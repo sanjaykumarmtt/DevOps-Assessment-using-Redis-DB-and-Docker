@@ -1,0 +1,62 @@
+---
+- name: Install build dependencies via apt
+  apt:
+    name: ["build-essential", "tcl", "wget", "pkg-config"]
+    state: present
+    update_cache: yes
+
+- name: Download Redis source code
+  get_url:
+    url: "https://download.redis.io/releases/redis-{{ redis_version }}.tar.gz"
+    dest: "/tmp/redis-{{ redis_version }}.tar.gz"
+
+- name: Extract Redis tarball
+  unarchive:
+    src: "/tmp/redis-{{ redis_version }}.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Compile and Build Redis from source
+  command: make
+  args:
+    chdir: "/tmp/redis-{{ redis_version }}"
+
+- name: Install Redis binaries to system path
+  command: make install
+  args:
+    chdir: "/tmp/redis-{{ redis_version }}"
+
+- name: Ensure Redis directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - /etc/redis
+    - /var/lib/redis
+    - /var/log/redis
+
+- name: Copy Redis configuration template
+  template:
+    src: redis.conf.j2
+    dest: /etc/redis/redis.conf
+  notify: restart redis
+
+- name: Ensure Redis Server is running
+  shell: pgrep redis-server || redis-server /etc/redis/redis.conf
+
+- name: Check if cluster is already formed
+  command: redis-cli -p {{ redis_port }} cluster info
+  register: cluster_check
+  failed_when: false
+  changed_when: false
+
+- name: Form Redis Cluster
+  command: >
+    redis-cli --cluster create
+    {% for host in groups['redis_cluster'] %}
+    {{ hostvars[host]['internal_ip'] }}:{{ redis_port }}
+    {% endfor %}
+    --cluster-replicas 1
+    --cluster-yes
+  run_once: true
+  when: "'cluster_state:ok' not in cluster_check.stdout"

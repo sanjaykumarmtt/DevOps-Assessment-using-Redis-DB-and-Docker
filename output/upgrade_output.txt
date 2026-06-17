@@ -1,0 +1,68 @@
+
+​🔄 Phase 4 — Zero-Downtime Rolling Upgrade & Failover Report
+
+​Executive Upgrade Summary:
+This execution artifact documents the automated high-availability Rolling Upgrade sequence (Phase 4) 
+designed to transition the active cluster infrastructure to target version v7.2.6 with absolute zero-downtime constraints.
+The pipeline sequentially isolated active replica nodes (redis-node-4, 5, and 6), 
+compiled the clean binaries from source distribution files, and gracefully restarted their local service structures. 
+Upon clearing the replica boundary, a systematic failover cascade (CLUSTER FAILOVER) was triggered programmatically on the master topologies. 
+Replicas dynamically assumed master configurations, transforming older configurations into clean replicas for isolated upgrades. 
+Immediate post-upgrade cryptographic sweeps verified that 100% of the active keyspace (1000/1000 simulation elements) remained intact with total cluster consistency.
+
+
+Redis-tool> upgrade --target-version 7.2.6
+🚀 [Initiating] Update Redis Container Process...
+🚀 [INIT] Starting Zero-Downtime Rolling Upgrade to v7.2.6
+
+--- [STEP 1] Upgrading Initial Replicas ---
+
+🔄 [Phase 4] Starting Rolling Upgrade for Replica Node: redis-node-4 (10.10.0.14)...
+TASK [Compile and Install Target Redis Binaries]... changed: [redis-node-4]
+TASK [Stop Old Process & Start Upgraded Redis Server]... changed: [redis-node-4]
+✅ [1/6] Upgraded replica 10.10.0.14 — cluster: ok
+
+🔄 [Phase 4] Starting Rolling Upgrade for Replica Node: redis-node-5 (10.10.0.15)...
+TASK [Compile and Install Target Redis Binaries]... changed: [redis-node-5]
+TASK [Stop Old Process & Start Upgraded Redis Server]... changed: [redis-node-5]
+✅ [2/6] Upgraded replica 10.10.0.15 — cluster: ok
+
+🔄 [Phase 4] Starting Rolling Upgrade for Replica Node: redis-node-6 (10.10.0.16)...
+TASK [Compile and Install Target Redis Binaries]... changed: [redis-node-6]
+TASK [Stop Old Process & Start Upgraded Redis Server]... changed: [redis-node-6]
+✅ [3/6] Upgraded replica 10.10.0.16 — cluster: ok
+
+🎉 [SUCCESS] All Replica nodes upgraded to v7.2.6 successfully!
+
+--- [STEP 2] Failing Over Masters and Upgrading them One by One ---
+
+🔄 [1/3] Starting Rolling Upgrade for Master: 10.10.0.13
+🚀 Triggering CLUSTER FAILOVER on Replica: 10.10.0.14
+⏳ Waiting for success response from 10.10.0.14...
+✅ Success Response Received! 10.10.0.14 has now assumed the MASTER role.
+🛠️ Old Master (10.10.0.13) transformed into replica. Initiating version migration...
+✅ [1/3] Upgraded old master 10.10.0.13 — cluster: ok
+
+🔄 [2/3] Starting Rolling Upgrade for Master: 10.10.0.11
+🚀 Triggering CLUSTER FAILOVER on Replica: 10.10.0.15
+⏳ Waiting for success response from 10.10.0.15...
+✅ Success Response Received! 10.10.0.15 has now assumed the MASTER role.
+🛠️ Old Master (10.10.0.11) transformed into replica. Initiating version migration...
+✅ [2/3] Upgraded old master 10.10.0.11 — cluster: ok
+
+🔄 [3/3] Starting Rolling Upgrade for Master: 10.10.0.12
+🚀 Triggering CLUSTER FAILOVER on Replica: 10.10.0.16
+⏳ Waiting for success response from 10.10.0.16...
+✅ Success Response Received! 10.10.0.16 has now assumed the MASTER role.
+🛠️ Old Master (10.10.0.12) transformed into replica. Initiating version migration...
+✅ [3/3] Upgraded old master 10.10.0.12 — cluster: ok
+
+⏳ Waiting 5 seconds for cluster topology to stabilize...
+
+--- [STEP 3] Post-Upgrade Verification ---
+
+=== Post-Upgrade Verification ===
+✓ PASS — 1000/1000 keys verified
+  ↳ Data Integrity Verified: 100% Intact.
+
+🎉 UPGRADE COMPLETE — All cluster endpoints on v7.2.6, data integrity verified safely.

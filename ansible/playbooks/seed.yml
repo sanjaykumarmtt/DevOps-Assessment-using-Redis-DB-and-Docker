@@ -1,0 +1,28 @@
+---
+- name: Phase 2 - Seed Data into Redis Cluster
+  hosts: redis_cluster[0]
+  become: yes
+
+  tasks:
+    - name: Copy Python seed script to the container
+      template:
+        src: ../roles/redis/templates/seed_data.py.j2
+        dest: /tmp/seed_data.py
+        mode: '0755'
+
+    - name: Execute data seeding script
+      command: python3 /tmp/seed_data.py
+      vars:
+        # 🚀 [VERIFIED] - ஜாவா கொடுத்த வேரியபிளை ஜின்ஜா டெம்ப்ளேட்டுக்கு கடத்துகிறோம் சஞ்சாய்!
+        target_keys: "{{ target_keys | default(1000) }}"
+      register: seed_output
+      changed_when: true
+
+    # - name: Clean up temporary seed script
+    #   file:
+    #     path: /tmp/seed_data.py
+    #     state: absent
+
+    - name: Print Seed Summary Output (JSON format)
+      debug:
+        msg: "{{ seed_output.stdout }}"
