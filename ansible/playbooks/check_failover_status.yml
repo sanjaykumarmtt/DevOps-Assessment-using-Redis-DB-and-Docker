@@ -1,0 +1,17 @@
+---
+- name: Verify Redis Cluster Node Role Status
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check cluster nodes output
+      shell: "redis-cli -p {{ target_replica_port }} cluster nodes"
+      register: cluster_nodes_output
+      until: "'myself,master' in cluster_nodes_output.stdout"
+      retries: 30     
+      delay: 2        
+      when: internal_ip == target_replica_ip
+
+    - name: Send success message for Java confirmation
+      debug:
+        msg: "FAILOVER_COMPLETED_SUCCESSFULLY_AND_NODE_IS_MASTER"
+      when: internal_ip == target_replica_ip

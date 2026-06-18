@@ -6,3 +6,4 @@
     - name: Execute cluster failover command
       command: redis-cli -p {{ target_replica_port }} cluster failover
       when: internal_ip == target_replica_ip
+
