@@ -282,5 +282,5 @@ Our deployment views Replica nodes exactly like a car's active backup Stepney. T
 - 🔗 **3. Tight Coupling with Container Runtime Namespaces:**
   - **The Limitation:** The Java-Ansible orchestration layer relies heavily on a fixed and predictable container naming convention and IP layout inside the docker environment. Any external, manual modifications made to the container namespaces or network subnets during the live deployment window will interrupt the automation target paths.
 
-- ⚠️ **4. Single-Node Availability Risk During the Sync Window:**
+- ⚠️  **4. Single-Node Availability Risk During the Sync Window:**
   - **The Limitation:** While a Master node is undergoing its rolling transition (immediately after being gracefully demoted to a Replica role), its newly promoted Master node temporarily operates without an active backup replica for a brief resynchronization window. A host-level hardware or container failure during this specific narrow window could risk temporary cluster degradation.
