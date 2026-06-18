@@ -61,8 +61,8 @@ To ensure a clean environment free of port conflicts or stale volume configurati
   If your host system utilizes Podman as the preferred open-source container runtime, use these drop-in replacement commands to safely deploy the exact same 6-node setup:       
   ```bash
   cd /submission/infra
-  podman compose down
-  podman compose up -d --build                 
+  podman-compose down
+  podman-compose up -d --build                 
   ```
 
 ---
